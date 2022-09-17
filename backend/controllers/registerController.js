@@ -8,6 +8,12 @@ export const getRegisters = asyncHandler(async (req, res) => {
   res.status(200).json(registers)
 })
 
+export const getRegistersbyId = asyncHandler(async (req, res) => {
+  const register = await Register.find({ user: req.params.id })
+
+  res.status(200).json(register)
+})
+
 export const createRegister = asyncHandler(async (req, res) => {
   if (!req.body.text) {
     res.status(400)
@@ -16,6 +22,7 @@ export const createRegister = asyncHandler(async (req, res) => {
 
   const register = await Register.create({
     text: req.body.text,
+    user: req.user.id,
   })
 
   res.status(200).json(register)
@@ -27,6 +34,11 @@ export const updateRegister = asyncHandler(async (req, res) => {
   if (!register) {
     res.status(400)
     throw new Error('Register not found')
+  }
+
+  if (register.user.toString() !== req.user.id) {
+    res.status(401)
+    throw new Error('User not authorized')
   }
 
   const updatedRegister = await Register.findByIdAndUpdate(
@@ -46,7 +58,12 @@ export const deleteRegister = asyncHandler(async (req, res) => {
     throw new Error('Register not found')
   }
 
-  await Register.remove({id: req.params.id})
+  if (register.user.toString() !== req.user.id) {
+    res.status(401)
+    throw new Error('User not authorized')
+  }
+
+  await Register.remove(register)
 
   res.status(200).json(req.params.id)
 })
